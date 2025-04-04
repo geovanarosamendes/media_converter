@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Vídeos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, select, button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #mensagem {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Conversor de YouTube para MP3/MP4</h2>
+        <input type="text" id="url" placeholder="Cole o link do vídeo aqui">
+        <select id="formato">
+            <option value="mp3">MP3</option>
+            <option value="mp4">MP4</option>
+        </select>
+        <button onclick="converter()">Converter</button>
+        <p id="mensagem"></p>
+        <a id="downloadLink" style="display: none;" target="_blank">Baixar Arquivo</a>
+    </div>
+
+    <script>
+        async function converter() {
+            const url = document.getElementById('url').value;
+            const formato = document.getElementById('formato').value;
+            const mensagem = document.getElementById('mensagem');
+            const downloadLink = document.getElementById('downloadLink');
+
+            if (!url) {
+                mensagem.textContent = "Por favor, insira um link válido.";
+                return;
+            }
+
+            mensagem.textContent = "Convertendo... Aguarde!";
+            downloadLink.style.display = "none";
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, format: formato })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    mensagem.textContent = data.mensagem;
+                    downloadLink.href = data.download_url;
+                    downloadLink.style.display = "block";
+                    downloadLink.textContent = "Baixar " + data.arquivo;
+                } else {
+                    mensagem.textContent = "Erro: " + data.erro;
+                }
+            } catch (erro) {
+                mensagem.textContent = "Erro ao converter: " + erro.message;
+            }
+        }
+    </script>
+</body>
+</html>
