@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import os
 import yt_dlp
 
+
 app = Flask("APIConverter")
+CORS(app)
 
 # Pasta onde os arquivos convertidos serão salvos
 DOWNLOAD_DIR = os.path.join(os.getcwd(), 'downloads')
