@@ -5,7 +5,7 @@ import yt_dlp
 
 
 app = Flask("APIConverter")
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Pasta onde os arquivos convertidos serão salvos
 DOWNLOAD_DIR = os.path.join(os.getcwd(), 'downloads')
