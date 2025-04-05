@@ -1,19 +1,22 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask import send_file
 import os
+import uuid
+import tempfile
 import yt_dlp
 
 
 app = Flask("APIConverter")
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Pasta onde os arquivos convertidos serão salvos
-DOWNLOAD_DIR = os.path.join(os.getcwd(), 'downloads')
+
+DOWNLOAD_DIR = tempfile.gettempdir()
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 @app.route('/')
 def home():
-    return "🎧 A API de conversão de Youtube para mp3/mp4 está no ar!"
+    return "A API de conversão de Youtube para mp3/mp4 está no ar!"
 
 
 def progresso(d):
@@ -37,6 +40,11 @@ def download_video():
     if formato not in ['mp3', 'mp4']:
         return jsonify({'erro': 'Formato inválido! Use apenas mp3 ou mp4.'}), 400
 
+    playlist = 'list=' in url
+
+    if playlist and formato != 'mp3':
+        return jsonify({'erro': 'Só é permitido baixar playlist no formato MP3.'}), 400
+
     try:
         arquivos_baixados = []
 
@@ -44,7 +52,7 @@ def download_video():
             infos = ydl.extract_info(url, download=False)
 
         titulo = infos['title'].strip().replace('/', '_')
-        nome_arquivo = f"{titulo}.{formato}"
+        nome_arquivo = f"{titulo}_{uuid.uuid4().hex[:8]}.{formato}"
         caminho_arquivo = os.path.join(DOWNLOAD_DIR, nome_arquivo)
 
 
@@ -86,10 +94,19 @@ def download_video():
 
 @app.route('/download-file/<nome_arquivo>')
 def baixar_arquivo(nome_arquivo):
-    try:
-        return send_from_directory(DOWNLOAD_DIR, nome_arquivo, as_attachment=True)
-    except FileNotFoundError:
+    file_path = os.path.join(DOWNLOAD_DIR, nome_arquivo)
+
+    if os.path.exists(file_path):
         return jsonify({'erro': 'Arquivo não encontrado.'}), 404
+
+    response = send_file(file_path, as_attachment=True)
+
+    @response.call_on_close
+    def apagar():
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    return response
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
